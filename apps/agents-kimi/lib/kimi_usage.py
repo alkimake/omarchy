@@ -10,7 +10,11 @@ from typing import Any, Mapping
 
 def kimi_home(env: Mapping[str, str]) -> Path:
   configured = str(env.get("KIMI_CODE_HOME", "")).strip()
-  return Path(configured).expanduser().resolve() if configured else (Path.home() / ".kimi-code").resolve()
+  if configured:
+    return Path(configured).expanduser().resolve()
+  configured_home = str(env.get("HOME", "")).strip()
+  home = Path(configured_home).expanduser() if configured_home else Path.home()
+  return (home / ".kimi-code").resolve()
 
 
 def empty_bucket() -> dict[str, int]:

@@ -11,7 +11,7 @@ from pathlib import Path
 LIB_DIR = Path(__file__).resolve().parents[1] / "lib"
 sys.path.insert(0, str(LIB_DIR))
 
-from kimi_usage import empty_stats, scan_usage
+from kimi_usage import empty_stats, kimi_home, scan_usage
 
 
 def usage_event(
@@ -131,6 +131,9 @@ class ScanUsageTest(unittest.TestCase):
 
     self.assertEqual(result["todayTokensByModel"], {"kimi": 3})
     self.assertEqual(result["modelUsage"]["kimi"]["inputTokens"], 3)
+
+  def test_kimi_home_uses_home_from_supplied_environment(self):
+    self.assertEqual(kimi_home({"HOME": str(self.root)}), self.root / ".kimi-code")
 
 
 if __name__ == "__main__":
