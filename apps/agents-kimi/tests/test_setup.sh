@@ -14,6 +14,8 @@ new_environment() {
   fake_bin="$case_root/bin"
   systemctl_log="$case_root/systemctl.log"
   mkdir -p "$test_home" "$fake_bin"
+  # Variables expand when the generated fixture runs.
+  # shellcheck disable=SC2016
   printf '%s\n' \
     '#!/bin/bash' \
     'printf "%s\n" "$*" >>"$SYSTEMCTL_LOG"' \
