@@ -1,0 +1,75 @@
+#!/usr/bin/python3
+
+# omarchy:summary=Refresh the Kimi Code usage record for the Agents panel
+# omarchy:args=[--force] [--limits-only]
+
+import json
+import os
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
+from typing import Mapping
+
+
+def state_home(env: Mapping[str, str]) -> Path:
+  configured = str(env.get("XDG_STATE_HOME", "")).strip()
+  if configured:
+    return Path(configured).expanduser().resolve()
+  home = Path(str(env.get("HOME", "")).strip() or Path.home())
+  return (home / ".local" / "state").resolve()
+
+
+def output_path(env: Mapping[str, str]) -> Path:
+  return state_home(env) / "omarchy" / "agents" / "usage" / "kimi.json"
+
+
+def atomic_write(path: Path, text: str) -> None:
+  path.parent.mkdir(parents=True, exist_ok=True)
+  fd, temp_name = tempfile.mkstemp(prefix=".kimi.", suffix=".tmp", dir=path.parent)
+  temp = Path(temp_name)
+  try:
+    with os.fdopen(fd, "w", encoding="utf-8") as handle:
+      handle.write(text)
+      handle.flush()
+      os.fsync(handle.fileno())
+    os.replace(temp, path)
+  finally:
+    try:
+      temp.unlink()
+    except FileNotFoundError:
+      pass
+
+
+def main() -> int:
+  default_collector = Path(__file__).with_name("omarchy-agent-usage-kimi")
+  configured = str(os.environ.get("OMARCHY_KIMI_COLLECTOR", "")).strip()
+  collector = Path(configured).expanduser() if configured else default_collector
+  try:
+    completed = subprocess.run(
+      [str(collector), *sys.argv[1:]],
+      capture_output=True,
+      text=True,
+      check=False,
+    )
+  except OSError:
+    print("Unable to run the Kimi usage collector", file=sys.stderr)
+    return 1
+  if completed.returncode != 0:
+    if completed.stderr:
+      sys.stderr.write(completed.stderr)
+    return completed.returncode
+  try:
+    record = json.loads(completed.stdout)
+  except json.JSONDecodeError:
+    print("Kimi collector returned invalid JSON", file=sys.stderr)
+    return 1
+  if not isinstance(record, dict) or record.get("schemaVersion") != 1 or record.get("id") != "kimi":
+    print("Kimi collector returned an invalid provider record", file=sys.stderr)
+    return 1
+  atomic_write(output_path(os.environ), json.dumps(record, separators=(",", ":")) + "\n")
+  return 0
+
+
+if __name__ == "__main__":
+  raise SystemExit(main())
