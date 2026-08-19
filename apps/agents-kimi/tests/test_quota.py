@@ -133,6 +133,7 @@ class FetchQuotaTest(unittest.TestCase):
           {},
           io.BytesIO(b"synthetic-access secret body"),
         )
+        self.addCleanup(error.close)
         result = fetch_quota("synthetic-access", {
           "KIMI_CODE_BASE_URL": "http://127.0.0.1:8765/coding/v1",
         }, opener=RecordingOpener(error=error))

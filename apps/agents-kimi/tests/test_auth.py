@@ -146,6 +146,7 @@ class ResolveAccessTokenTest(unittest.TestCase):
     })
     response = io.BytesIO(b'{"error":"invalid_grant","error_description":"synthetic-refresh rejected"}')
     error = urllib.error.HTTPError("http://127.0.0.1", 400, "Bad Request", {}, response)
+    self.addCleanup(error.close)
 
     result = resolve_access_token(self.root, {
       "KIMI_CODE_OAUTH_HOST": "http://127.0.0.1:8765",
@@ -164,6 +165,7 @@ class ResolveAccessTokenTest(unittest.TestCase):
       "expires_at": self.now - 1,
     })
     error = urllib.error.HTTPError("http://127.0.0.1", 503, "Unavailable", {}, io.BytesIO(b"secret"))
+    self.addCleanup(error.close)
 
     result = resolve_access_token(self.root, {
       "KIMI_CODE_OAUTH_HOST": "http://127.0.0.1:8765",

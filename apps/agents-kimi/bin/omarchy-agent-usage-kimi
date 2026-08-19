@@ -1,0 +1,30 @@
+#!/usr/bin/python3
+
+# omarchy:summary=Print the Kimi Code usage record as JSON
+# omarchy:args=[--force] [--limits-only]
+# omarchy:hidden=true
+
+import argparse
+import json
+import os
+import sys
+from pathlib import Path
+
+LIB_DIR = Path(__file__).resolve().parents[1] / "lib"
+sys.path.insert(0, str(LIB_DIR))
+
+from kimi_collector import build_record
+
+
+def main() -> int:
+  parser = argparse.ArgumentParser()
+  parser.add_argument("--force", action="store_true")
+  parser.add_argument("--limits-only", action="store_true")
+  args = parser.parse_args()
+  record = build_record(os.environ, force=args.force, limits_only=args.limits_only)
+  print(json.dumps(record, separators=(",", ":")))
+  return 0
+
+
+if __name__ == "__main__":
+  raise SystemExit(main())
