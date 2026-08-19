@@ -1,0 +1,8 @@
+[Unit]
+Description=Refresh Kimi usage for the Omarchy Agents panel
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/bin/omarchy-agent-usage-kimi-update
