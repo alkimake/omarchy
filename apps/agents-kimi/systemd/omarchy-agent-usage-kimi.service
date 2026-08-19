@@ -5,4 +5,5 @@ Wants=network-online.target
 
 [Service]
 Type=oneshot
+EnvironmentFile=-%E/omarchy/agents-kimi.env
 ExecStart=%h/.local/bin/omarchy-agent-usage-kimi-update

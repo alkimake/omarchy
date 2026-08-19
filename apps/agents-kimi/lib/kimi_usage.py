@@ -126,19 +126,22 @@ def scan_usage(root: Path, now: datetime | None = None) -> dict[str, Any]:
       continue
 
     session_id = session_id_for(path)
-    with handle:
-      for raw in handle:
-        event = parse_usage_event(raw, fallback_day)
-        if event is None:
-          continue
-        day, model, bucket = event
-        if sum(bucket.values()) <= 0:
-          continue
-        add_usage(stats, day, model, bucket)
-        session_ids.add(session_id)
-        active_dates.add(day)
-        if day == today:
-          today_session_ids.add(session_id)
+    try:
+      with handle:
+        for raw in handle:
+          event = parse_usage_event(raw, fallback_day)
+          if event is None:
+            continue
+          day, model, bucket = event
+          if sum(bucket.values()) <= 0:
+            continue
+          add_usage(stats, day, model, bucket)
+          session_ids.add(session_id)
+          active_dates.add(day)
+          if day == today:
+            today_session_ids.add(session_id)
+    except OSError:
+      continue
 
   stats["totalSessions"] = len(session_ids)
   stats["todaySessions"] = len(today_session_ids)

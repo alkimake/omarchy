@@ -83,6 +83,13 @@ unlink_owned() {
   fi
 }
 
+is_owned_link() {
+  local target="$1" current
+  [[ -L $target ]] || return 1
+  current=$(readlink "$target")
+  [[ $current == "$repo_root"/* ]]
+}
+
 install_agents_kimi() {
   local app_root="$repo_root/apps/agents-kimi"
   check_link_target "$app_root/bin/omarchy-agent-usage-kimi" "$bin_dir/omarchy-agent-usage-kimi"
@@ -103,7 +110,9 @@ install_agents_kimi() {
 }
 
 uninstall_agents_kimi() {
-  systemctl --user disable --now omarchy-agent-usage-kimi.timer >/dev/null 2>&1 || true
+  if is_owned_link "$unit_dir/omarchy-agent-usage-kimi.timer"; then
+    systemctl --user disable --now omarchy-agent-usage-kimi.timer >/dev/null 2>&1 || true
+  fi
   unlink_owned "$bin_dir/omarchy-agent-usage-kimi"
   unlink_owned "$bin_dir/omarchy-agent-usage-kimi-update"
   unlink_owned "$unit_dir/omarchy-agent-usage-kimi.service"

@@ -178,6 +178,13 @@ class ResolveAccessTokenTest(unittest.TestCase):
   def test_rejects_non_https_non_loopback_override(self):
     with self.assertRaises(ValueError):
       safe_service_url("http://example.com")
+    for unsafe in (
+      "https://user:password@auth.kimi.com",
+      "https://auth.kimi.com?endpoint=other",
+      "https://auth.kimi.com#fragment",
+    ):
+      with self.subTest(unsafe=unsafe), self.assertRaises(ValueError):
+        safe_service_url(unsafe)
     self.assertEqual(safe_service_url("https://auth.kimi.com/"), "https://auth.kimi.com")
     self.assertEqual(safe_service_url("http://localhost:8765/"), "http://localhost:8765")
 

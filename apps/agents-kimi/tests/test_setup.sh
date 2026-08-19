@@ -53,6 +53,8 @@ test_install_and_repeat_install() {
     "$repo_root/apps/agents-kimi/systemd/omarchy-agent-usage-kimi.service"
   assert_link "$test_home/config/systemd/user/omarchy-agent-usage-kimi.timer" \
     "$repo_root/apps/agents-kimi/systemd/omarchy-agent-usage-kimi.timer"
+  grep -Fx 'EnvironmentFile=-%E/omarchy/agents-kimi.env' \
+    "$test_home/config/systemd/user/omarchy-agent-usage-kimi.service" >/dev/null
   grep -Fx -- '--user daemon-reload' "$systemctl_log" >/dev/null
   grep -Fx -- '--user enable --now omarchy-agent-usage-kimi.timer' "$systemctl_log" >/dev/null
 }
@@ -110,6 +112,22 @@ test_uninstall_preserves_unrelated_symlink() {
   [[ $(readlink -f "$test_home/.local/bin/omarchy-agent-usage-kimi") == "$case_root/unrelated" ]]
 }
 
+test_uninstall_does_not_disable_unrelated_timer() {
+  new_environment
+  mkdir -p "$test_home/config/systemd/user"
+  printf '[Timer]\nOnBootSec=1h\n' >"$case_root/unrelated.timer"
+  ln -s "$case_root/unrelated.timer" \
+    "$test_home/config/systemd/user/omarchy-agent-usage-kimi.timer"
+
+  run_setup --uninstall agents-kimi
+
+  [[ -L $test_home/config/systemd/user/omarchy-agent-usage-kimi.timer ]]
+  if grep -Fx -- '--user disable --now omarchy-agent-usage-kimi.timer' "$systemctl_log" >/dev/null; then
+    echo "uninstall disabled an unrelated timer" >&2
+    return 1
+  fi
+}
+
 test_unknown_application_fails_without_changes() {
   new_environment
   if run_setup unknown-app >/dev/null 2>&1; then
@@ -124,6 +142,7 @@ test_refuses_unrelated_target
 test_preflights_every_target_before_linking_anything
 test_uninstall_removes_owned_links_and_generated_record
 test_uninstall_preserves_unrelated_symlink
+test_uninstall_does_not_disable_unrelated_timer
 test_unknown_application_fails_without_changes
 
 echo "setup tests passed: $tests_run"

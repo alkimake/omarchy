@@ -44,6 +44,21 @@ Credential precedence is:
 
 Existing Kimi OAuth access tokens are reused. Expired OAuth credentials are refreshed under a file lock and persisted atomically with mode `0600`. Credential values are never included in usage records, caches, or diagnostic messages.
 
+The timer reads optional persistent overrides from:
+
+```text
+${XDG_CONFIG_HOME:-~/.config}/omarchy/agents-kimi.env
+```
+
+Use that file for values such as `KIMI_CODE_HOME`, `KIMI_CODING_API_KEY`, or `KIMI_CODE_BASE_URL` that must also apply to scheduled runs. Keep it private:
+
+```bash
+mkdir -p "${XDG_CONFIG_HOME:-$HOME/.config}/omarchy"
+install -m 600 /dev/null "${XDG_CONFIG_HOME:-$HOME/.config}/omarchy/agents-kimi.env"
+```
+
+Write one `NAME=value` assignment per line, without `export`, then run `systemctl --user start omarchy-agent-usage-kimi.service` to test it. The file is optional when Kimi uses its default home and OAuth login.
+
 The `/usages` endpoint is not a stable public integration contract. If authentication, networking, or response parsing fails, local token charts remain available and the panel displays a limits status instead of dropping Kimi entirely.
 
 ## Refresh behavior

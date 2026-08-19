@@ -35,7 +35,12 @@ def safe_service_url(value: str) -> str:
   candidate = value.strip().rstrip("/")
   parsed = urllib.parse.urlparse(candidate)
   loopback = parsed.hostname in {"localhost", "127.0.0.1", "::1"}
-  if not parsed.hostname or (parsed.scheme != "https" and not (parsed.scheme == "http" and loopback)):
+  has_unsafe_components = parsed.username is not None or parsed.password is not None or bool(parsed.query or parsed.fragment)
+  if (
+    not parsed.hostname
+    or has_unsafe_components
+    or (parsed.scheme != "https" and not (parsed.scheme == "http" and loopback))
+  ):
     raise ValueError("Service URL must use HTTPS or a loopback HTTP address")
   return candidate
 

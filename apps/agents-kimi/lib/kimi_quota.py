@@ -149,7 +149,10 @@ def fetch_quota(
       payload = json.loads(response.read().decode("utf-8"))
     if not isinstance(payload, dict):
       raise ValueError("usage response is not an object")
-    return QuotaResult(limits=normalize_usage(payload), tier_label=tier_label(payload))
+    limits = normalize_usage(payload)
+    if not limits:
+      raise ValueError("usage response has no recognized limits")
+    return QuotaResult(limits=limits, tier_label=tier_label(payload))
   except urllib.error.HTTPError as error:
     return http_failure(error.code)
   except (urllib.error.URLError, TimeoutError, OSError):

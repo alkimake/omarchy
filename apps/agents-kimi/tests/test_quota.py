@@ -154,6 +154,15 @@ class FetchQuotaTest(unittest.TestCase):
     self.assertFalse(invalid_result.transient)
     self.assertEqual(invalid_result.limits, [])
 
+  def test_unrecognized_json_object_is_reported_as_invalid(self):
+    result = fetch_quota("synthetic-access", {
+      "KIMI_CODE_BASE_URL": "http://127.0.0.1:8765/coding/v1",
+    }, opener=RecordingOpener({"unexpected": []}))
+
+    self.assertEqual(result.limits, [])
+    self.assertIn("invalid", result.help_text.lower())
+    self.assertFalse(result.transient)
+
   def test_rejects_unsafe_base_url_without_sending_request(self):
     opener = RecordingOpener({})
 

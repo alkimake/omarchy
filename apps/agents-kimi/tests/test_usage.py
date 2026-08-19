@@ -7,6 +7,7 @@ import tempfile
 import unittest
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from unittest import mock
 
 LIB_DIR = Path(__file__).resolve().parents[1] / "lib"
 sys.path.insert(0, str(LIB_DIR))
@@ -134,6 +135,35 @@ class ScanUsageTest(unittest.TestCase):
 
   def test_kimi_home_uses_home_from_supplied_environment(self):
     self.assertEqual(kimi_home({"HOME": str(self.root)}), self.root / ".kimi-code")
+
+  def test_continues_after_mid_read_oserror(self):
+    damaged = self.write_wire("session_one", "main", [
+      usage_event("kimi-code/k3", self.now, output=2),
+    ])
+    self.write_wire("session_two", "main", [
+      usage_event("kimi-code/k3", self.now, output=7),
+    ])
+    original_open = Path.open
+
+    class FailingHandle:
+      def __enter__(self):
+        return self
+
+      def __exit__(self, exc_type, exc, traceback):
+        return False
+
+      def __iter__(self):
+        raise OSError("synthetic mid-read failure")
+
+    def open_fixture(path, *args, **kwargs):
+      if path == damaged:
+        return FailingHandle()
+      return original_open(path, *args, **kwargs)
+
+    with mock.patch.object(Path, "open", open_fixture):
+      result = scan_usage(self.root, now=self.now)
+
+    self.assertEqual(result["todayTotalTokens"], 7)
 
 
 if __name__ == "__main__":
